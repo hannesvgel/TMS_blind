@@ -6,14 +6,20 @@ import threading
 
 # Initialize the TTS engine
 engine = pyttsx3.init()
+engine.setProperty(
+    'voice',
+    r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0'
+)
 last_marker_id = 9999
 
 arucodict = {
     0: "You are at the entry door of UnternehmerTUM, go straight to enter \n"
-       "a second door is ahead approx. 3 steps after the first one, go straight to enter",
+       "a second door is ahead approx. 3 steps after the first one, \n"
+       "go straight to enter",
     1: ("You are in UnternehmerTUM: \n"
         "LEFT: hallway to TMS and prototype rooms\n"
-        "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), Venture Labs (2nd floor)"),
+        "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), \n"
+        "          Venture Labs (2nd floor)"),
     2: "Prototype room 1 is on the left in xy steps",
     3: "Prototype room 2 is on the left in xy steps",
     4: "TMS room 1 is straight ahead",
