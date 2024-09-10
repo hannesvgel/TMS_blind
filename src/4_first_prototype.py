@@ -2,6 +2,7 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 import pyttsx3
+import threading
 
 # Initialize the TTS engine
 engine = pyttsx3.init()
@@ -29,8 +30,8 @@ aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters()
 detector = aruco.ArucoDetector(aruco_dict, parameters)
 
-# Define the real-world size of the ArUco marker (e.g., 0.05 meters = 5 cm)
-marker_size = 0.05  # Size in meters
+'''# Define the real-world size of the ArUco marker (e.g., 0.05 meters = 5 cm)
+marker_size = 0.05  # Size in meters'''
 
 # Camera calibration parameters (replace with actual values)
 fx = 1248
@@ -46,6 +47,13 @@ dist_coeffs = np.array([k1, k2, p1, p2, k3])
 # Start Video capture
 cap = cv2.VideoCapture(1 + cv2.CAP_DSHOW)
 
+
+def speak_text(text):
+    """Function to run the TTS in a separate thread."""
+    engine.say(text)
+    engine.runAndWait()
+
+
 while True:
 
     _, frame = cap.read()
@@ -60,8 +68,8 @@ while True:
     if ids is not None:
         aruco.drawDetectedMarkers(frame, corners)
 
-        # Estimate the pose of each marker
-        # rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, dist_coeffs)
+        '''# Estimate the pose of each marker
+        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, dist_coeffs)'''
 
         for i in range(len(ids)):
             # Draw the detected markers
@@ -75,13 +83,15 @@ while True:
 
                 # Display each line separately
                 for j, line in enumerate(text):
-                    cv2.putText(frame, line, (10, 30 + (i * 100) + (j * 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+                    cv2.putText(frame, line, (10, 30 + (i * 100) + (j * 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                                (255, 255, 255), 2)
 
                 # Check if the marker has changed before speaking
                 if marker_id != last_marker_id:
-                    # Speak out the message associated with the current marker
-                    engine.say(arucodict[marker_id])
-                    engine.runAndWait()
+                    # Create a separate thread for the TTS so that it doesn't block the camera feed
+                    tts_thread = threading.Thread(target=speak_text, args=(arucodict[marker_id],))
+                    tts_thread.start()
+
                     # Update the last detected marker ID
                     last_marker_id = marker_id
 
