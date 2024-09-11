@@ -16,7 +16,7 @@ aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
 parameters = cv2.aruco.DetectorParameters()
 
 
-image_folder = "./arucu_codes"
+image_folder = "./arucu_pictures_unternehmnerTUM"
 
 # Loop through all images
 for filename in os.listdir(image_folder):
