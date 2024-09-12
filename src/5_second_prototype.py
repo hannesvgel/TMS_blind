@@ -3,6 +3,7 @@ import cv2.aruco as aruco
 import numpy as np
 import pyttsx3
 import threading
+from playsound import playsound
 
 #%%
 # Initilisation and setups
@@ -10,6 +11,8 @@ import threading
 # Load calibrated data
 calib_data_path = "C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/camera_calibration/calib_data/MultiMatrix.npz"
 calib_data = np.load(calib_data_path)
+
+# playsound("C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/audio_clip/clip1.m4a")
 
 # MARKER_SIZE = 14  # centimeters, length of marker in real life
 MARKER_SIZE = 6  # centimeters, length of marker in real life
@@ -52,6 +55,7 @@ arucodict_speech = {
     2: "Prototype room 1 is on the left in xy steps",
     # 3: "Prototype room 2 is on the left in xy steps",
     3: f"Prototype room 2 is on the left in {distance} steps",
+    # 3: "Prototype room 2 is on the left in " + str(distance) + " steps",
     4: "TMS room 1 is straight ahead",
     5: ("You are in TMS room 1:\n"
         "LEFT: in approx. 4 steps to TMS room 2 (pitch stage)\n"
@@ -64,7 +68,6 @@ arucodict_speech = {
     # Adding a 9 in front of the digits for the opposite direction
     # 92: "Prototype room 1 is on the right in xy steps",
     # 93: "Prototype room 2 is on the right in xy steps",
-
 
 }
 
@@ -187,6 +190,10 @@ def detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos):
                          
 #%%
 while True:
+    
+    # Workaround - Declare a private variable to judge if loop is already started (meant for pyttsx engine) 
+    # engine = pyttsx3.init()
+    
     ret, frame = cap.read()
     height, width, ret = frame.shape
     
@@ -211,6 +218,42 @@ while True:
     (distance, x_pos) = display_distance(marker_corners, marker_IDs, reject)
     # (distance) = display_distance(marker_corners, marker_IDs, reject)
     
+    # Check x_pos orientation
+    if x_pos > 0:
+        x_pos_orientation = "right"
+    else:
+        x_pos_orientation = "left"
+    
+    # Workaround - Redefine arucodict_speech using newly generated variable 'distance' and 'x_pos'
+    arucodict_speech = {
+        
+        # Without an artificial '9' in front
+        0: "You are at the entry door of UnternehmerTUM, go straight to enter \n"
+           "a second door is ahead approx. 3 steps after the first one, \n"
+           "go straight to enter",
+        1: ("You are in UnternehmerTUM: \n"
+            "LEFT: hallway to TMS and prototype rooms\n"
+            "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), \n"
+            "          Venture Labs (2nd floor)"),
+        2: "Prototype room 1 is on the left in xy steps",
+        # 3: "Prototype room 2 is on the left in xy steps",
+        3: f"Prototype room 2 is on the {x_pos_orientation} in {round(distance/100, 2)} meters",
+        # 3: "Prototype room 2 is on the left in " + str(distance) + " steps",
+        4: "TMS room 1 is straight ahead",
+        5: ("You are in TMS room 1:\n"
+            "LEFT: in approx. 4 steps to TMS room 2 (pitch stage)\n"
+            "STRAIGHT & RIGHT: enter deeper into the room"),
+        6: "Pitch Stage is straight ahead",
+        7: "Voon",
+        8: "Go straight to find Team 9",
+        
+        # With an artificial '9' in front
+        # Adding a 9 in front of the digits for the opposite direction
+        # 92: "Prototype room 1 is on the right in xy steps",
+        # 93: "Prototype room 2 is on the right in xy steps",
+
+    }
+    
     # Run function detect_aruco
     detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos)
     # detect_aruco(corners, ids, rejected, last_marker_id, distance)
@@ -221,6 +264,10 @@ while True:
     # Esc key to escape
     if cv2.waitKey(1) & 0xFF == 27:
         break
+    
+    # Workaround - Stop pyttsx engine 
+    # if engine._inLoop:
+    #     engine.endLoop()
 
 cap.release()
 cv2.destroyAllWindows()
