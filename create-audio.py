@@ -65,14 +65,14 @@ for location_id, description in locations.items():
         for distance in distances:
             unit = "meter" if distance == 1 else "meters"
             instruction = description.format(distance=distance, unit=unit)
-            instructions[f"{location_id}_X:_{distance}"] = instruction
+            instructions[f"{location_id}_X_{distance}"] = instruction
 
     else:
         instruction = description
         instructions[f"{location_id}_X_X"] = instruction
 
-api_key = "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"
-client = OpenAI(api_key=api_key)
+
+client = OpenAI(api_key=os.getenv("API_KEY"))
 
 
 def generate_audio_file(text, file_name):
