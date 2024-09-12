@@ -8,19 +8,56 @@ import pyttsx3
 import threading
 from playsound import playsound
 import os
+import time
 
 #%%
 # Initilisation and setups
+
+arucodict_speech = []
+
+# Location array
+locations = {
+    0: "{direction} in {distance} {unit} is the entry door to Entrepreneurship Center. A second door is approximately 3 steps after the first one. Go straight to enter the entry hall.",
+    1: "You are in the entry hall of of the Entrepreneurship Center. Left are the hallway to Think Make Start and prototype rooms. Straight are the toilets, stairs to TUM Incubator (1st floor), and Venture Labs (2nd floor).",
+    2: "Lecture hall 3 is on the {direction} in {distance} {unit}.",
+    3: "Lecture hall 2 is on the {direction} in {distance} {unit}.",
+    4: "Lecture hall 1 is on the {direction} in {distance} {unit}. The door is probably closed.",
+    5: "The entrance of T.M.S. fair is ahead in {distance} {unit}.",
+    6: "You are in the T.M.S. fair area. Left is lecture hall 1 including the pitch stage. Right is the further part of the room.",
+    7: "Lecture hall 1 is ahead in {distance} {unit}. The pitch stage is in there.",
+    8: "The check-in desk is on the {direction} in {distance} {unit}.",
+    9: "You are in the middle of the T.M.S. fair area. Continue straight and then right to go to the hallway, where you can find the toilets.",
+    10: "You are at the end of the T.M.S. fair area. Right is the hallway with exit and toilets.",
+    11: "The hallway is straight ahead in {distance} {unit}. You can find the toilets here.",
+    12: "Exit and stairwell are on the {direction} in {distance} {unit}.",
+    13: "Women's bathroom is on the {direction} in {distance} {unit}.",
+    14: "Disabled bathroom is on the {direction} in {distance} {unit}.",
+    15: "Men's bathroom is on the {direction} in {distance} {unit}.",
+    16: "You are in the entry hall: Right are the seating area, elevator, main exit, and stairs to the incubator and Venture Labs.",
+    17: "The elevator is on the {direction} in {distance} {unit}.",
+    18: "You are in the middle of the entry hall: On the right are the elevator, stairs to the incubator and Venture Labs. Straight ahead and slightly left is the main exit.",
+    19: "You are in the middle of the entry hall: Straight ahead and then left are the elevator, stairs to incubator and Venture Labs. Straight ahead is the hallway including toilets. Straight ahead and slightly right is the seating area.",
+    20: "The hallway is straight ahead in {distance} {unit}. You can find the toilets here.",
+    21: "You are at the end of the T.M.S. fair area: Straight and then left you can go deeper in the room, you can find the teams there.",
+    22: "You are in the middle of the T.M.S. fair area: Continue straight for lecture hall 1. Continue straight and then left to go to the hallway.",
+    23: "You are at the beginning of the T.M.S. fair area: Straight is lecture hall 1 including the pitch stage. Straight and then left is the hallway with lecture halls 1 to 3.",
+    24: "The hallway is straight ahead in {distance} {unit}. You can find the lecture halls 1 to 3 here.",
+    25: "The entry hall of UnternehmerTUM is ahead in {distance} {unit}: Inside on the left are the seating area, stairs, elevator and hallway with toilets. On the right is the main exit.",
+    26: "The main exit is on the {direction} in {distance} {unit}.",
+    27: "You are at the entrance of the entry hall. The main exist is straight ahead. Straight and then left is the hallway with lecture halls 1 to 3.",
+}
 
 # Load calibrated data
 calib_data_path = "C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/camera_calibration/calib_data/MultiMatrix.npz"
 calib_data = np.load(calib_data_path)
 
 # Audio files pathways
-audio_clip_folder = "C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/audio_clip"
+# audio_clip_folder = "C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/audio_clip"
+# audio_clip_folder = "C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/audios"
+#audio_clip_folder = r"C:\Users\hianz\Documents\git\TMS_blind\TMS_blind\audios"
 
-# MARKER_SIZE = 14  # centimeters, length of marker in real life
-MARKER_SIZE = 6  # centimeters, length of marker in real life
+MARKER_SIZE = 14  # centimeters, length of marker in real life
+# MARKER_SIZE = 6  # centimeters, length of marker in real life
 
 # Initialise camera matrix and distance coefficient
 cam_mat = calib_data["camMatrix"]
@@ -35,6 +72,12 @@ dist_coeffs = dist_coef
 last_marker_id = 9999
 distance = 0
 x_pos_orientation = "left"  # default
+delay_time = 1  # in seconds; delay after playing every audio
+
+# Wegweise marker_id
+#global wegweise_marker_id
+#wegweise_marker_id = []
+# wegweise_marker_id = [0,1,6,9,10,16,18,19,21,22,23,25,27]
 
 # aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50) # old
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
@@ -42,34 +85,34 @@ parameters = aruco.DetectorParameters()
 detector = aruco.ArucoDetector(aruco_dict, parameters)
 
 # Start Video capture
-cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)  # Laptop Webcam
-# cap = cv2.VideoCapture(1 + cv2.CAP_DSHOW)  # USB Webcam
+# cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)  # Laptop Webcam
+cap = cv2.VideoCapture(1 + cv2.CAP_DSHOW)  # USB Webcam
 
 # %%
 # Initialize the TTS engine
-engine = pyttsx3.init()
+#engine = pyttsx3.init()
 # engine.setProperty(
 #     'voice',
 #     r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0'
 # )
 
-engine.setProperty(
-    'voice',
-    'english_rp+f3'
-)
+#engine.setProperty(
+    #'voice',
+    #'english_rp+f3'
+#)
 
 # %%
-def speak_text(text):
-    """Function to run the TTS in a separate thread."""
-    engine.say(text)
-    engine.runAndWait()
-    engine.setProperty('rate', 30)
+# def speak_text(text):
+    # """Function to run the TTS in a separate thread."""
+    # engine.say(text)
+    # engine.runAndWait()
+    # engine.setProperty('rate', 30)
 
 
 # %%
 # Function to play audio files
-def audio_play(audio_path):
-    playsound(audio_path)
+# def audio_play(audio_path):
+#     playsound(audio_path)
 
 # %%
 # Function to display distance
@@ -130,13 +173,15 @@ def display_distance(marker_corners, marker_IDs, reject):
 # %%
 # Function to detect ArUco markers & read them out 
 def detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos):
+    print("detect_aruco")
 # def detect_aruco(corners, ids, rejected, last_marker_id, distance):
+    
     if ids is not None:
         aruco.drawDetectedMarkers(frame, corners)
         
         '''# Estimate the pose of each marker
         rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, dist_coeffs)'''
-    
+        
         for i in range(len(ids)):
             # Draw the detected markers
             aruco.drawDetectedMarkers(frame, [corners[i]])
@@ -153,50 +198,37 @@ def detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos):
                                 (255, 255, 255), 2)
     
                 # Check if the marker has changed before speaking
-                if marker_id != last_marker_id:
-                    
-                    # Create a separate thread for the TTS so that it doesn't block the camera feed
+                # if marker_id == last_marker_id:
+                if marker_id != last_marker_id:  # old
+                        
                     try:
-                        if x_pos < 0:  # Camera's POV: Left
-                            
-                            direction = "left"  # x_pos_orientation
-                            
-                            if distance < 100: 
-                                current_audio_path = os.path.join(audio_clip_folder, str(marker_id) + "_" + direction + "_" + "1" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 200:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "2" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 300:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "3" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 400:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "4" + ".mp3")
-                                audio_play(current_audio_path)
-                            else: 
-                                print("Distance is more than 4 metres.")
-                        else:
-                            
-                            direction = "right"  # x_pos_orientation
-                            
-                            if distance < 100: 
-                                current_audio_path = os.path.join(audio_clip_folder, str(marker_id) + "_" + direction + "_" + "1" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 200:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "2" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 300:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "3" + ".mp3")
-                                audio_play(current_audio_path)
-                            elif distance < 400:
-                                current_audio_path = os.path.join(audio_clip_folder, marker_id + "_" + direction + "_" + "4" + ".mp3")
-                                audio_play(current_audio_path)
-                            else: 
-                                print("Distance is more than 4 metres.")
-                                
+                        print("test")
+                        directionStr = "X"
+                        distanceStr = "X"
+                        
+                        if marker_id in locations:
+                            description = locations[marker_id]
+                            print(description)
+                            if "{direction}" in description:
+                                directionStr = "left" if x_pos < 0 else "right"
+                            if "{distance}" in description:
+                                if distance < 300:
+                                    distanceStr = 3
+                                if distance < 200:
+                                    distanceStr = 2
+                                if distance < 100:
+                                    distanceStr = 1
+                            print(directionStr, distanceStr)
+                            print(f"{str(marker_id)}_{directionStr}_{distanceStr}.mp3")
+                            audio_clip_folder = os.path.join(os.getcwd(), "../audios")
+                            print(audio_clip_folder)
+                            current_audio_path = os.path.join(audio_clip_folder, f"{str(marker_id)}_{directionStr}_{distanceStr}.mp3")
+                            playsound(current_audio_path)
+                            time.sleep(delay_time)
+                                    
                     except:
-                        print("Error: Distance is not defined.")
-                         
+                        print("Error: Distance is not defined or audio file does not exist!")
+
 #%%
 while True:
     
@@ -230,39 +262,12 @@ while True:
     else:
         x_pos_orientation = "left"
     
-    # Workaround; In 6_third_prototype, it is meant for debugging only - Redefine arucodict_speech using newly generated variable 'distance' and 'x_pos'
-    arucodict_speech = {
-        
-        # Without an artificial '9' in front
-        0: "You are at the entry door of UnternehmerTUM, go straight to enter \n"
-           "a second door is ahead approx. 3 steps after the first one, \n"
-           "go straight to enter",
-        1: ("You are in UnternehmerTUM: \n"
-            "LEFT: hallway to TMS and prototype rooms\n"
-            "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), \n"
-            "          Venture Labs (2nd floor)"),
-        2: "Prototype room 1 is on the left in xy steps",
-        # 3: "Prototype room 2 is on the left in xy steps",
-        3: f"Prototype room 2 is on the {x_pos_orientation} in {round(distance/100, 2)} meters",
-        # 3: "Prototype room 2 is on the left in " + str(distance) + " steps",
-        4: "TMS room 1 is straight ahead",
-        5: ("You are in TMS room 1:\n"
-            "LEFT: in approx. 4 steps to TMS room 2 (pitch stage)\n"
-            "STRAIGHT & RIGHT: enter deeper into the room"),
-        6: "Pitch Stage is straight ahead",
-        7: "Voon",
-        8: "Go straight to find Team 9",
-        
-        # With an artificial '9' in front
-        # Adding a 9 in front of the digits for the opposite direction
-        # 92: "Prototype room 1 is on the right in xy steps",
-        # 93: "Prototype room 2 is on the right in xy steps",
-
-    }
-    
     # Run function detect_aruco & play audio
+    # last_marker_id_temp = detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos)
     detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos)
     # detect_aruco(corners, ids, rejected, last_marker_id, distance)
+    
+    # last_marker_id = last_marker_id_temp
     
     # Show the frame
     cv2.imshow('input', frame)
