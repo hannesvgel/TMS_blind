@@ -3,6 +3,7 @@ import cv2.aruco as aruco
 import numpy as np
 import pyttsx3
 import threading
+
 # from playsound import playsound
 
 # %%
@@ -79,6 +80,7 @@ detector = aruco.ArucoDetector(aruco_dict, parameters)
 # Start Video capture
 # cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)  # Laptop Webcam
 cap = cv2.VideoCapture(1 + cv2.CAP_DSHOW)  # USB Webcam
+
 
 # %%
 def speak_text(text):
@@ -245,7 +247,7 @@ while True:
         4: f"Lecture Hall 1 is on the {x_pos_orientation} in {round(distance / 100, 2)} meters, \n"
            f"door is probably closed",
         5: f"Entrance of Prototype Area ahead in {round(distance / 100, 2)} meters",
-        6: f"TMS Prototyping Space: \n"
+        6: f"You are at the beginning of the TMS Prototyping area: \n"
            f"LEFT: Lecture Hall 1 including the pitch stage \n"
            f"RIGHT: go further into the room",
         7: f"Lecture Hall 1 is ahead in {round(distance / 100, 2)} meters. \n"
@@ -272,7 +274,23 @@ while True:
             f"LEFT: Elevator, Stairs to Incubator and Venture Labs \n"
             f"STRAIGHT AHEAD: Hallway including Toilets \n"
             f"RIGHT: Seating Area",
-
+        20: f"The Hallway is straight ahead in {round(distance / 100, 2)} meters.\n"
+            f"You can find the toilets here",
+        21: f"You are at the end of the prototyping area: \n"
+            f"LEFT: go deeper in the room, you can find the teams there",
+        22: f"You are in the middle of the prototyping area: \n"
+            f"continue straight for lecture hall 1 \n"
+            f"continue straight and then left to go to the hallway, \n"
+            f"where you can find the toilets",
+        23: f"You are at the beginning of the TMS Prototyping area: \n"
+            f"STRAIGHT: Lecture Hall 1 including the pitch stage \n"
+            f"LEFT: Hallway with lecture halls 1-3",
+        24: f"The Hallway is straight ahead in {round(distance / 100, 2)} meters.\n"
+            f"You can find the lecture halls 1-3 here",
+        25: "You are in the entry hall of UnternehmerTUM: \n"
+            "LEFT: Seating Area, Stairs, Elevator and Hallway with Toilets \n"
+            "RIGHT: main exit",
+        26: f"The main exit is on the {x_pos_orientation} in {round(distance / 100, 2)} meters"
 
         # With an artificial '9' in front
         # Adding a 9 in front of the digits for the opposite direction
