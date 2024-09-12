@@ -2,18 +2,12 @@ import cv2
 import cv2.aruco as aruco
 import numpy as np
 import pyttsx3
-import threading
-
-# from playsound import playsound
-
-# %%
-# Initilisation and setups
+# import threading
 
 # Load calibrated data
 calib_data_path = r"C:\Users\Lenovo\PycharmProjects\TMS_blind\camera_calibration\calib_data\MultiMatrix.npz"
 calib_data = np.load(calib_data_path)
 
-# playsound("C:/Users/hianz/Documents/git/TMS_blind/TMS_blind/audio_clip/clip1.m4a")
 
 MARKER_SIZE = 14  # centimeters, length of marker in real life
 # MARKER_SIZE = 6  # centimeters, length of marker in real life
@@ -24,53 +18,29 @@ dist_coef = calib_data["distCoef"]
 r_vectors = calib_data["rVector"]
 t_vectors = calib_data["tVector"]
 
-# Another initialisation
+'''# Another initialisation
 camera_matrix = cam_mat
-dist_coeffs = dist_coef
+dist_coeffs = dist_coef'''
 
 # Initialize the TTS engine
 engine = pyttsx3.init()
-# engine.setProperty(
-#     'voice',
-#     r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0'
-# )
-
 engine.setProperty(
     'voice',
-    'english_rp+f3'
+    r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0'
 )
+# engine.setProperty('rate', 60)
+
+
+'''engine.setProperty(
+    'voice',
+    'english_rp+f3'
+)'''
 
 last_marker_id = 9999
 distance = 0
 
-arucodict_speech = {
-
-    # Without an artificial '9' in front
-    0: "You are at the entry door of UnternehmerTUM, go straight to enter \n"
-       "a second door is ahead approx. 3 steps after the first one, \n"
-       "go straight to enter",
-    1: ("You are in UnternehmerTUM: \n"
-        "LEFT: hallway to TMS and prototype rooms\n"
-        "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), \n"
-        "          Venture Labs (2nd floor)"),
-    2: "Prototype room 1 is on the left in xy steps",
-    # 3: "Prototype room 2 is on the left in xy steps",
-    3: f"Prototype room 2 is on the left in {distance} steps",
-    # 3: "Prototype room 2 is on the left in " + str(distance) + " steps",
-    4: "TMS room 1 is straight ahead",
-    5: ("You are in TMS room 1:\n"
-        "LEFT: in approx. 4 steps to TMS room 2 (pitch stage)\n"
-        "STRAIGHT & RIGHT: enter deeper into the room"),
-    6: "Pitch Stage is straight ahead",
-    7: "Voon",
-    8: "Go straight to find Team 9",
-
-    # With an artificial '9' in front
-    # Adding a 9 in front of the digits for the opposite direction
-    # 92: "Prototype room 1 is on the right in xy steps",
-    # 93: "Prototype room 2 is on the right in xy steps",
-
-}
+# Create a lock for thread-safe TTS
+# tts_lock = threading.Lock()
 
 # aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50) # old
 aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
@@ -85,9 +55,11 @@ cap = cv2.VideoCapture(1 + cv2.CAP_DSHOW)  # USB Webcam
 # %%
 def speak_text(text):
     """Function to run the TTS in a separate thread."""
+    '''with tts_lock:
+        engine.say(text)
+        engine.runAndWait()'''
     engine.say(text)
     engine.runAndWait()
-    engine.setProperty('rate', 30)
 
 
 # %%
@@ -154,51 +126,40 @@ def detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos):
     if ids is not None:
         aruco.drawDetectedMarkers(frame, corners)
 
-        '''# Estimate the pose of each marker
-        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, dist_coeffs)'''
-
         for i in range(len(ids)):
             # Draw the detected markers
             aruco.drawDetectedMarkers(frame, [corners[i]])
 
             # Get the message from the dictionary using the marker ID
             marker_id = ids[i][0]
-            if marker_id in arucodict_speech:
-                # Split the text into multiple lines
-                text = arucodict_speech[marker_id].split('\n')
+            if marker_id != last_marker_id:
+                if marker_id in arucodict_speech:
+                    # Check if the marker has changed before speaking
 
-                # Display each line separately
-                for j, line in enumerate(text):
-                    cv2.putText(frame, line, (10, 30 + (i * 100) + (j * 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
-                                (255, 255, 255), 2)
+                    # Split the text into multiple lines
+                    text = arucodict_speech[marker_id].split('\n')
 
-                # Check if the marker has changed before speaking
-                if marker_id != last_marker_id:
+                    # Display each line separately
+                    for j, line in enumerate(text):
+                        cv2.putText(frame, line, (10, 30 + (i * 100) + (j * 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
+                                    (255, 255, 255), 2)
 
-                    # Create a separate thread for the TTS so that it doesn't block the camera feed
-                    try:
-                        if distance < 150:  # in cm
-                            if x_pos < 0:
-                                # tts_thread = threading.Thread(target=speak_text, args=(arucodict_speech[marker_id] + "rechts in ZZZZZ",))
-                                tts_thread = threading.Thread(target=speak_text, args=(arucodict_speech[marker_id],))
-                                tts_thread.start()
+                    if distance < 1400:
+                        if marker_id != last_marker_id:
+                            # tts_thread = threading.Thread(target=speak_text, args=(arucodict_speech[marker_id] + "rechts in ZZZZZ",))
+                            # tts_thread = threading.Thread(target=speak_text, args=(arucodict_speech[marker_id],))
+                            # tts_thread.start()
+                            speak_text(arucodict_speech[marker_id])
 
-                                # Update the last detected marker ID
-                                last_marker_id = marker_id
-                            # else:
+                    else:
+                        print("Distance is too big")
+            last_marker_id = marker_id
 
-                        else:
-                            print("Distance is more than 150cm")
-                    except:
-                        print("Error: Distance is not defined")
+    return last_marker_id
 
 
 # %%
 while True:
-
-    # Workaround - Declare a private variable to judge if loop is already started (meant for pyttsx engine)
-    # engine = pyttsx3.init()
-
     ret, frame = cap.read()
     height, width, ret = frame.shape
 
@@ -231,8 +192,6 @@ while True:
 
     # Workaround - Redefine arucodict_speech using newly generated variable 'distance' and 'x_pos'
     arucodict_speech = {
-
-        # Without an artificial '9' in front
         0: "Entry door of UnternehmerTUM, go straight to enter \n"
            "a second door is approximately 3 steps after the first one, \n"
            "go straight to enter the entry hall",
@@ -241,12 +200,10 @@ while True:
             "STRAIGHT: toilets, stairs to TUM Incubator (1st floor), \n"
             "          Venture Labs (2nd floor)"),
         2: f"Lecture Hall 3 is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
-        # 3: "Prototype room 2 is on the left in xy steps",
         3: f"Lecture Hall 2 is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
-        # 3: "Prototype room 2 is on the left in " + str(distance) + " steps",
         4: f"Lecture Hall 1 is on the {x_pos_orientation} in {round(distance / 100, 2)} meters, \n"
            f"door is probably closed",
-        5: f"Entrance of Prototype Area ahead in {round(distance / 100, 2)} meters",
+        5: f"Entrance of Prototype Area ahead in {round(distance / 100, 2)} meters", # todo: change to fair entry, prototype area=fair
         6: f"You are at the beginning of the TMS Prototyping area: \n"
            f"LEFT: Lecture Hall 1 including the pitch stage \n"
            f"RIGHT: go further into the room",
@@ -264,20 +221,23 @@ while True:
         13: f"Women's Bathroom is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
         14: f"Disabled Bathroom is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
         15: f"Men's Bathroom is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
-        16: f"You are in the entry hall:"
-            f"RIGHT: seating area, main exit, Stairs to Incubator and Venture Labs \n",
+        16: f"You are in the entry hall: \n"
+            f"RIGHT: seating area, main exit, \n"
+            f"       Stairs to Incubator and Venture Labs",
         17: f"The Elevator is on the {x_pos_orientation} in {round(distance / 100, 2)} meters",
-        18: f"You are in the middle of the entry hall:"
+        18: f"You are in the middle of the entry hall: \n"
             f"RIGHT: Stairs to Incubator and Venture Labs \n"
             f"LEFT: main exit",
-        19: f"You are in the middle of the entry hall:"
-            f"LEFT: Elevator, Stairs to Incubator and Venture Labs \n"
+        19: f"You are in the middle of the entry hall: \n"
+            f"STRAIGHT AHEAD and then LEFT: Elevator, Stairs to Incubator \n"
+            f"                               and Venture Labs \n"
             f"STRAIGHT AHEAD: Hallway including Toilets \n"
             f"RIGHT: Seating Area",
         20: f"The Hallway is straight ahead in {round(distance / 100, 2)} meters.\n"
             f"You can find the toilets here",
         21: f"You are at the end of the prototyping area: \n"
-            f"LEFT: go deeper in the room, you can find the teams there",
+            f"STRAIGHT AHEAD & then LEFT: go deeper in the room, \n"
+            f"                             you can find the teams there",
         22: f"You are in the middle of the prototyping area: \n"
             f"continue straight for lecture hall 1 \n"
             f"continue straight and then left to go to the hallway, \n"
@@ -287,20 +247,16 @@ while True:
             f"LEFT: Hallway with lecture halls 1-3",
         24: f"The Hallway is straight ahead in {round(distance / 100, 2)} meters.\n"
             f"You can find the lecture halls 1-3 here",
-        25: "You are in the entry hall of UnternehmerTUM: \n"
-            "LEFT: Seating Area, Stairs, Elevator and Hallway with Toilets \n"
+        25: "You are in the entry hall of UnternehmerTUM: \n" # todo ahead in distance
+            "STRAIGHT & then LEFT: Seating Area, Stairs, Elevator and Hallway with Toilets \n"
             "RIGHT: main exit",
-        26: f"The main exit is on the {x_pos_orientation} in {round(distance / 100, 2)} meters"
-
-        # With an artificial '9' in front
-        # Adding a 9 in front of the digits for the opposite direction
-        # 92: "Prototype room 1 is on the right in xy steps",
-        # 93: "Prototype room 2 is on the right in xy steps",
-
+        26: f"The main exit is ahead in {round(distance / 100, 2)} meters",
+        27: "You are at the entrance of the entry hall. The main exist is straight ahead. \n"
+            "Straight and then left is the hallway with lecture halls 1 to 3."
     }
 
     # Run function detect_aruco
-    detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos)
+    last_marker_id = detect_aruco(corners, ids, rejected, last_marker_id, distance, x_pos)
     # detect_aruco(corners, ids, rejected, last_marker_id, distance)
 
     # Show the frame
@@ -309,10 +265,6 @@ while True:
     # Esc key to escape
     if cv2.waitKey(1) & 0xFF == 27:
         break
-
-    # Workaround - Stop pyttsx engine
-    # if engine._inLoop:
-    #     engine.endLoop()
 
 cap.release()
 cv2.destroyAllWindows()
