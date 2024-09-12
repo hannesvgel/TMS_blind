@@ -72,7 +72,8 @@ for location_id, description in locations.items():
         instructions[f"{location_id}_X_X"] = instruction
 
 
-client = OpenAI(api_key=os.getenv("API_KEY"))
+API_KEY = "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"
+client = OpenAI(api_key=API_KEY)
 
 
 def generate_audio_file(text, file_name):
