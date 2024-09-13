@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from openai import OpenAI
 
-locations = {
+markers = {
     0: "{direction} in {distance} {unit} is the entry door to Entrepreneurship Center. A second door is approximately 3 steps after the first one. Go straight to enter the entry hall.",
     1: "You are in the entry hall of of the Entrepreneurship Center. Left are the hallway to Think Make Start and prototype rooms. Straight are the toilets, stairs to TUM Incubator (1st floor), and Venture Labs (2nd floor).",
     2: "Lecture hall 3 is on the {direction} in {distance} {unit}.",
@@ -13,7 +13,7 @@ locations = {
     7: "Lecture hall 1 is ahead in {distance} {unit}. The pitch stage is in there.",
     8: "The check-in desk is on the {direction} in {distance} {unit}.",
     9: "You are in the middle of the T.M.S. fair area. Continue straight and then right to go to the hallway, where you can find the toilets.",
-    10: "You are at th end of the T.M.S. fair area. Right is the hallway with exit and toilets.",
+    10: "You are at the end of the T.M.S. fair area. Right is the hallway with exit and toilets.",
     11: "The hallway is straight ahead in {distance} {unit}. You can find the toilets here.",
     12: "Exit and stairwell are on the {direction} in {distance} {unit}.",
     13: "Women's bathroom is on the {direction} in {distance} {unit}.",
@@ -31,49 +31,49 @@ locations = {
     25: "The entry hall of UnternehmerTUM is ahead in {distance} {unit}: Inside on the left are the seating area, stairs, elevator and hallway with toilets. On the right is the main exit.",
     26: "The main exit is on the {direction} in {distance} {unit}.",
     27: "You are at the entrance of the entry hall. The main exist is straight ahead. Straight and then left is the hallway with lecture halls 1 to 3.",
+    28: "You are on stage currently showcasing Navigaze. {direction} is the audience. Don't forget to smile!",
 }
 directions = ["left", "straight ahead", "right"]
 distances = [1, 2, 3, 4, 5]
 
-audio_dir = "audios"
-if os.path.exists(audio_dir):
-    for file in os.listdir(audio_dir):
-        os.remove(os.path.join(audio_dir, file))
-    os.rmdir(audio_dir)
+audio_dir = "../audios"
+# if os.path.exists(audio_dir):
+#     for file in os.listdir(audio_dir):
+#         os.remove(os.path.join(audio_dir, file))
+#     os.rmdir(audio_dir)
 os.makedirs(audio_dir, exist_ok=True)
 
 instructions = {}
-for location_id, description in locations.items():
+for marker_id, marker_text in markers.items():
     # If both {direction} and {distance} exist in the description
-    if "{direction}" in description and "{distance}" in description:
+    if "{direction}" in marker_text and "{distance}" in marker_text:
         for direction in directions:
             for distance in distances:
                 unit = "meter" if distance == 1 else "meters"
-                instruction = description.format(
+                instruction = marker_text.format(
                     direction=direction, distance=distance, unit=unit
                 )
-                instructions[f"{location_id}_{direction}_{distance}"] = instruction
+                instructions[f"{marker_id}_{direction}_{distance}"] = instruction
 
     # If only {direction} exists in the description
-    elif "{direction}" in description:
+    elif "{direction}" in marker_text:
         for direction in directions:
-            instruction = description.format(direction=direction)
-            instructions[f"{location_id}_{direction}_X"] = instruction
+            instruction = marker_text.format(direction=direction)
+            instructions[f"{marker_id}_{direction}_X"] = instruction
 
     # If only {distance} exists in the description (if applicable)
-    elif "{distance}" in description:
+    elif "{distance}" in marker_text:
         for distance in distances:
             unit = "meter" if distance == 1 else "meters"
-            instruction = description.format(distance=distance, unit=unit)
-            instructions[f"{location_id}_X_{distance}"] = instruction
+            instruction = marker_text.format(distance=distance, unit=unit)
+            instructions[f"{marker_id}_X_{distance}"] = instruction
 
     else:
-        instruction = description
-        instructions[f"{location_id}_X_X"] = instruction
+        instruction = marker_text
+        instructions[f"{marker_id}_X_X"] = instruction
 
-
-API_KEY = "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"
-client = OpenAI(api_key=API_KEY)
+openai_api_key = ""
+client = OpenAI(api_key=openai_api_key)
 
 
 def generate_audio_file(text, file_name):
